@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f8f2">
+  <meta name="description" content="LifeExpiry helps you track household expiry dates and reduce waste.">
+
+  <title>Life Expiry — Waste Less, Live Better</title>
+
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="#" class="brand">
+      <span class="brand-icon">✳</span>
+      Life Expiry
+    </a>
+
+    <nav class="navigation" aria-label="Main navigation">
+      <a href="#dashboard" class="nav-link active">Dashboard</a>
+      <a href="#inventory" class="nav-link">My Inventory</a>
+      <a href="#recipes" class="nav-link">Recipe Ideas</a>
+    </nav>
+
+    <button class="primary-button" id="add-product-btn">
+      + Add Product
+    </button>
+  </header>
+
+  <main class="container" id="dashboard">
+    <section class="welcome">
+      <p class="eyebrow">YOUR HOME, ORGANIZED</p>
+      <h1>Waste less. <span>Live better.</span></h1>
+      <p class="subtitle">
+        Keep track of what you have and use it before it goes to waste.
+      </p>
+    </section>
+
+    <section class="stats-grid" aria-label="Inventory summary">
+      <article class="stat-card">
+        <p>Total products</p>
+        <h2 id="total-count">0</h2>
+        <span>Items in your inventory</span>
+      </article>
+
+      <article class="stat-card warning-card">
+        <p>Expiring soon</p>
+        <h2 id="expiring-count">0</h2>
+        <span>Need your attention</span>
+      </article>
+
+      <article class="stat-card danger-card">
+        <p>Past expiry date</p>
+        <h2 id="expired-count">0</h2>
+        <span>Check these products</span>
+      </article>
+
+      <article class="stat-card success-card">
+        <p>Within date</p>
+        <h2 id="safe-count">0</h2>
+        <span>Not yet due for expiry</span>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel" id="inventory">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR COLLECTION</p>
+            <h2>My Inventory</h2>
+          </div>
+
+          <button class="text-button" id="view-all-btn">
+            View all →
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <input
+            type="search"
+            id="search-input"
+            placeholder="Search products..."
+            aria-label="Search products"
+          >
+
+          <select id="category-filter" aria-label="Filter by category">
+            <option value="all">All categories</option>
+            <option value="Food">Food</option>
+            <option value="Medicine">Medicine</option>
+            <option value="Cosmetics">Cosmetics</option>
+            <option value="Household">Household</option>
+          </select>
+        </div>
+
+        <div id="product-list" class="product-list">
+          <div class="empty-state">
+            <span class="empty-icon">🌿</span>
+            <h3>Your inventory starts here</h3>
+            <p>Add your first product to begin tracking expiry dates.</p>
+            <button class="primary-button" id="empty-add-btn">
+              Add your first product
+            </button>
+          </div>
+        </div>
+      </article>
+
+      
+<aside class="panel recipe-panel" id="recipes">
+  <p class="eyebrow">COOK SMARTER, WASTE LESS</p>
+  <h2>Recipe Ideas <span>🥑</span></h2>
+
+  <p class="subtitle">
+    Delicious ideas based on what's already in your kitchen.
+  </p>
+
+  <div class="recipe-summary" id="recipe-summary">
+    Add food products to discover recipes.
+  </div>
+
+  <div class="recipe-toolbar">
+    <label for="recipe-filter">Explore</label>
+    <select id="recipe-filter">
+      <option value="all">All recipes</option>
+      <option value="indian">Indian</option>
+      <option value="international">International</option>
+      <option value="quick">Ready in 20 minutes</option>
+    </select>
+  </div>
+
+  <div id="recipe-list" class="recipe-list">
+    <div class="recipe-empty">
+      <span>🥗</span>
+      <h3>Your next meal starts here</h3>
+      <p>Add food products to your inventory to unlock personalized recipe ideas.</p>
+    </div>
+  </div>
+</aside>
+
+</section>
+        
+    
+<section class="panel use-first-panel" id="use-first">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">PRIORITIZE WHAT MATTERS</p>
+      <h2>Use First</h2>
+    </div>
+    <span class="use-first-count" id="use-first-count">0 items</span>
+  </div>
+
+  <p class="subtitle">
+    Your products are sorted by the nearest expiry date.
+  </p>
+
+  <div id="use-first-list" class="use-first-list">
+    <p class="use-first-empty">Nothing needs your attention right now. 🌿</p>
+  </div>
+</section>
+
+
+
+<div class="modal-overlay" id="product-modal" hidden>
+  <section class="modal" role="dialog"
+           aria-modal="true" aria-labelledby="modal-title">
+
+    <div class="modal-heading">
+      <div>
+        <p class="eyebrow">YOUR INVENTORY</p>
+        <h2 id="modal-title">Add a product</h2>
+      </div>
+      <button type="button" class="close-button"
+              id="close-modal-btn" aria-label="Close form">
+        &times;
+      </button>
+    </div>
+
+    <form id="product-form">
+      <label for="product-name">Product name</label>
+      <input id="product-name" name="name"
+             type="text" placeholder="e.g. Milk"
+             required maxlength="80">
+
+      <label for="product-category">Category</label>
+      <select id="product-category" name="category" required>
+        <option value="Food">Food</option>
+        <option value="Medicine">Medicine</option>
+        <option value="Cosmetics">Cosmetics</option>
+        <option value="Household">Household</option>
+      </select>
+
+      <label for="product-quantity">Quantity</label>
+      <input id="product-quantity" name="quantity"
+             type="text" placeholder="e.g. 1 litre or 2 packs"
+             required maxlength="40">
+
+      <label for="product-expiry">Expiry date</label>
+      <input id="product-expiry" name="expiry"
+             type="date" required>
+
+      <p class="form-error" id="form-error" role="alert"></p>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-button"
+                id="cancel-modal-btn">Cancel</button>
+        <button type="submit" class="primary-button">
+          Save Product
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+
+    <footer>
+      <p>Made with care by LifeExpiry · A little less waste, every day.</p>
+    </footer>
+  </main>
+</body>
+</html>
