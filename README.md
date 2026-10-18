@@ -1,6 +1,3 @@
-# LifeExpiry
-Smart expiry-date tracker and recipe recommender to help reduce waste.
-
 # 🌿 LifeExpiry — Never Waste Anything Again
 
 LifeExpiry is a simple, responsive web application that helps users track product expiry dates, manage their inventory, and discover recipes based on ingredients they already have at home.
