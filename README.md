@@ -182,6 +182,7 @@ Through this project, I explored:
 Computer Science and Engineering — Data Science
 
 GitHub: [Shraddha-chagi](https://github.com/Shraddha-chagi)
+
 Live demo link: (https://shraddha-chagi.github.io/LifeExpiry)
 
 ---
