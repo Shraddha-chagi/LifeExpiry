@@ -136,19 +136,6 @@ LifeExpiry currently uses browser `localStorage` to store inventory items and re
 
 This is a frontend-only implementation; it does not currently provide user accounts or cloud synchronization.
 
-## 🚀 Deployment
-
-LifeExpiry can be deployed using GitHub Pages.
-
-1. Push the project files to the GitHub repository.
-2. Open the repository's **Settings**.
-3. Select **Pages** from the sidebar.
-4. Under the build and deployment settings, choose **Deploy from a branch**.
-5. Select the `main` branch and `/ (root)` folder.
-6. Save the settings and wait for deployment.
-
-Once deployment finishes, GitHub Pages will provide a public URL for the website.
-
 ## 🔮 Future Enhancements
 
 Potential future improvements include:
