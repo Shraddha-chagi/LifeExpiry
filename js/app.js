@@ -586,6 +586,7 @@ function renderRecipes() {
   }
 
   relevant.forEach(recipe => {
+    console.log(recipe.name, recipe.id, recipe.ingredients);
     const card = document.createElement("article");
     card.className = "recipe-card";
     
@@ -772,36 +773,6 @@ recipe.ingredients.forEach(ingredient => {
 });
 
 updateIngredientProgress();
-
-recipe.ingredients.forEach(ingredient => {
-  const li = document.createElement("li");
-  const isAvailable = recipe.matched.some(item =>
-    normalizeIngredient(item) === normalizeIngredient(ingredient)
-  );
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.id = `ingredient-${recipe.id}-${normalizeIngredient(ingredient).replace(/\s+/g, "-")}`;
-  checkbox.setAttribute("aria-label", ingredient);
-
-  const label = document.createElement("label");
-  label.htmlFor = checkbox.id;
-  label.textContent = ingredient;
-
-  const availability = document.createElement("span");
-  availability.className = "ingredient-availability";
-  availability.textContent = isAvailable ? "In inventory" : "Needed";
-
-  checkbox.addEventListener("change", () => {
-    li.classList.toggle("ingredient-checked", checkbox.checked);
-
-    checkedCount += checkbox.checked ? 1 : -1;
-    updateIngredientProgress();
-  });
-
-  li.append(checkbox, label, availability);
-  ingredientList.append(li);
-});
 
 updateIngredientProgress();
 
