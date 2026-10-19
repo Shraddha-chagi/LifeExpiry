@@ -960,3 +960,510 @@ document.getElementById("view-all-btn").addEventListener("click", () => {
 });
 
 renderProducts();
+
+/* ==================================
+   LifeExpiry: Barcode Scanner
+================================== */
+
+const scanItemsBtn = document.getElementById("scan-items-btn");
+const scannerModal = document.getElementById("scanner-modal");
+const closeScannerBtn = document.getElementById("close-scanner-btn");
+const stopScannerBtn = document.getElementById("stop-scanner-btn");
+const scannerStatus = document.getElementById("scanner-status");
+
+let barcodeScanner = null;
+let scannerRunning = false;
+let scanProcessing = false;
+
+// Open the scanner
+scanItemsBtn.addEventListener("click", async () => {
+  scannerModal.hidden = false;
+  scannerStatus.textContent = "Starting camera...";
+
+  if (typeof Html5Qrcode === "undefined") {
+    scannerStatus.textContent =
+      "Scanner library failed to load. Check your internet connection.";
+    return;
+  }
+
+  try {
+    barcodeScanner = new Html5Qrcode("barcode-reader", {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ],
+      verbose: true
+    });
+
+    await barcodeScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 15,
+        qrbox: { width: 250, height: 100 },
+        aspectRatio: 1.5
+      },
+      async (decodedText) => {
+        if (scanProcessing) return;
+
+        scanProcessing = true;
+        scannerStatus.textContent =
+          "Barcode detected! Looking up product...";
+
+        try {
+          await stopCamera();
+          await lookupProduct(decodedText);
+        } catch (error) {
+          console.error("Barcode scan error:", error);
+          alert("Something went wrong while processing the barcode.");
+        } finally {
+          scanProcessing = false;
+        }
+      },
+      () => {
+        // The camera checks many frames before finding a barcode.
+        // No action is needed for an unsuccessful frame.
+      }
+    );
+
+    scannerRunning = true;
+    scannerStatus.textContent =
+      "Camera is on. Point it at the product barcode.";
+  } catch (error) {
+    console.error("Could not start camera:", error);
+    scannerStatus.textContent =
+      "Could not access the camera. Allow camera permission and try again.";
+  }
+});
+
+// Stop the camera safely
+async function stopCamera() {
+  if (barcodeScanner && scannerRunning) {
+    await barcodeScanner.stop();
+    scannerRunning = false;
+  }
+
+  if (barcodeScanner) {
+    await barcodeScanner.clear();
+    barcodeScanner = null;
+  }
+}
+
+// Look up a scanned barcode using Open Food Facts
+async function lookupProduct(barcode) {
+  let productName = "";
+  let foundProduct = false;
+
+  try {
+    const url =
+      `https://world.openfoodfacts.org/api/v2/product/` +
+      `${encodeURIComponent(barcode)}?fields=product_name`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Product lookup request failed.");
+    }
+
+    const data = await response.json();
+
+    if (data.status === 1 && data.product?.product_name) {
+      productName = data.product.product_name;
+      foundProduct = true;
+    }
+  } catch (error) {
+    console.error("Product lookup failed:", error);
+  }
+
+  // Close the scanner and open the existing product form.
+  scannerModal.hidden = true;
+  openModal();
+
+  // Fill the existing form fields.
+  document.getElementById("product-name").value = productName;
+  document.getElementById("product-category").value = "Food";
+
+  // The barcode database usually doesn't provide expiry dates
+  // or the quantity you currently have.
+  document.getElementById("product-quantity").value = "";
+  document.getElementById("product-expiry").value = "";
+
+  if (foundProduct) {
+    document.getElementById("product-quantity").focus();
+  } else {
+    alert(
+      "Product not found in Open Food Facts. " +
+      "Enter its name, category, quantity, and expiry date manually."
+    );
+    document.getElementById("product-name").focus();
+  }
+}
+
+// Close scanner using the X button or Stop Camera button
+async function closeScanner() {
+  try {
+    await stopCamera();
+  } catch (error) {
+    console.error("Could not stop camera:", error);
+  }
+
+  scannerModal.hidden = true;
+  scanProcessing = false;
+}
+
+closeScannerBtn.addEventListener("click", closeScanner);
+stopScannerBtn.addEventListener("click", closeScanner);
+
+/* Mobile navbar toggle */
+const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+const mobileMenu = document.getElementById("mobile-menu");
+
+if (mobileMenuToggle && mobileMenu) {
+  mobileMenuToggle.addEventListener("click", () => {
+    const isOpen = mobileMenu.classList.toggle("menu-open");
+
+    mobileMenuToggle.setAttribute("aria-expanded", String(isOpen));
+    mobileMenuToggle.setAttribute(
+      "aria-label",
+      isOpen ? "Close navigation menu" : "Open navigation menu"
+    );
+  });
+
+  // Close the menu after selecting a navigation destination.
+  mobileMenu.querySelectorAll(".nav-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      mobileMenu.classList.remove("menu-open");
+      mobileMenuToggle.setAttribute("aria-expanded", "false");
+      mobileMenuToggle.setAttribute(
+        "aria-label",
+        "Open navigation menu"
+      );
+    });
+  });
+
+  // Restore the desktop layout when the screen becomes wide.
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 900) {
+      mobileMenu.classList.remove("menu-open");
+      mobileMenuToggle.setAttribute("aria-expanded", "false");
+      mobileMenuToggle.setAttribute(
+        "aria-label",
+        "Open navigation menu"
+      );
+    }
+  });
+}
+
+/* ==========================================
+   LifeExpiry: Receipt scanning with OCR
+========================================== */
+
+const scanBillBtn = document.getElementById("scan-bill-btn");
+const billModal = document.getElementById("bill-modal");
+const closeBillBtn = document.getElementById("close-bill-btn");
+const billCameraInput = document.getElementById("bill-camera-input");
+const billFileInput = document.getElementById("bill-file-input");
+const billStatus = document.getElementById("bill-status");
+const billReview = document.getElementById("bill-review");
+const billItemsList = document.getElementById("bill-items-list");
+const billContinueBtn = document.getElementById("bill-continue-btn");
+
+function openBillScanner() {
+  billModal.hidden = false;
+  billReview.hidden = true;
+  billItemsList.replaceChildren();
+  billStatus.textContent = "Take a photo or upload a receipt image.";
+}
+
+function closeBillScanner() {
+  billModal.hidden = true;
+  billCameraInput.value = "";
+  billFileInput.value = "";
+}
+
+scanBillBtn.addEventListener("click", openBillScanner);
+closeBillBtn.addEventListener("click", closeBillScanner);
+
+// Read a photo or uploaded receipt using Tesseract.js.
+async function processReceipt(file) {
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    billStatus.textContent = "Please select an image file.";
+    return;
+  }
+
+  if (typeof Tesseract === "undefined") {
+    billStatus.textContent =
+      "OCR library did not load. Check your internet connection and refresh.";
+    return;
+  }
+
+  billReview.hidden = true;
+  billItemsList.replaceChildren();
+  billStatus.textContent = "Reading receipt text... Please wait.";
+
+  try {
+    const result = await Tesseract.recognize(file, "eng", {
+      logger: (message) => {
+        if (message.status === "recognizing text" &&
+            typeof message.progress === "number") {
+          billStatus.textContent =
+            `Reading receipt... ${Math.round(message.progress * 100)}%`;
+        }
+      }
+    });
+
+    const lines = result.data.text
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+
+    const items = extractReceiptItems(lines);
+
+    if (!items.length) {
+      billStatus.textContent =
+        "No likely product lines were detected. Try a clearer photo or enter products manually.";
+      return;
+    }
+
+    renderReceiptReview(items);
+    billReview.hidden = false;
+    billStatus.textContent =
+      `Detected ${items.length} possible item(s). Review every row before continuing.`;
+  } catch (error) {
+    console.error("Receipt OCR failed:", error);
+    billStatus.textContent =
+      "Could not read this image. Try a clearer, well-lit receipt photo.";
+  }
+}
+
+billCameraInput.addEventListener("change", () => {
+  processReceipt(billCameraInput.files[0]);
+});
+
+billFileInput.addEventListener("change", () => {
+  processReceipt(billFileInput.files[0]);
+});
+
+// This is a best-effort receipt parser, not a guarantee.
+// Users should correct names and quantities before continuing.
+
+function extractReceiptItems(lines) {
+  const cleanedLines = lines
+    .map(line => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  // Find the product table header.
+  // Do not treat text above this header as products.
+  const headerIndex = cleanedLines.findIndex(line =>
+    /\bname\b/i.test(line) &&
+    /\bqty\b|\bquantity\b/i.test(line) &&
+    /\bprice\b|\bamount\b/i.test(line)
+  );
+
+  // If we cannot identify the table, avoid guessing.
+  if (headerIndex === -1) {
+    console.warn("Receipt product table header was not detected.");
+    return [];
+  }
+
+  const items = [];
+  const footerPattern =
+    /\b(sub\s*total|grand\s*total|total|tax|vat|gst|cash|change|balance|payment|thank\s+you)\b/i;
+
+  for (let i = headerIndex + 1; i < cleanedLines.length; i++) {
+    let line = cleanedLines[i];
+
+    // Stop at the totals/payment section.
+    if (footerPattern.test(line)) break;
+
+    // Ignore separators, blank-looking lines and non-item text.
+    if (!/[a-z]/i.test(line)) continue;
+
+    /*
+      Expected examples:
+      Lorem ipsum          1    $9.20
+      Lorem ipsum dolor    2    $19.20
+      Milk                 1    ₹45.00
+    */
+    const itemMatch = line.match(
+      /^(.+?)\s+(\d+(?:\.\d+)?)\s+(?:₹|Rs\.?|INR|\$|£|€)?\s*[\d,]+(?:\.\d{1,2})?$/
+    );
+
+    if (!itemMatch) {
+      // Do not add uncertain lines as products.
+      console.warn("Skipped unrecognized receipt line:", line);
+      continue;
+    }
+
+    const name = itemMatch[1]
+      .replace(/^[\s:|.-]+|[\s:|.-]+$/g, "")
+      .trim();
+
+    const quantityValue = itemMatch[2];
+
+    if (
+      name.length < 2 ||
+      name.length > 80 ||
+      /^\d+$/.test(name)
+    ) {
+      continue;
+    }
+
+    // Avoid duplicate names, but keep distinct receipt rows
+    // if they have different quantities.
+    items.push({
+      name,
+      quantity: `${quantityValue} units (confirm)`
+    });
+  }
+
+  return items;
+}
+
+// Build the review UI safely using DOM elements.
+function renderReceiptReview(items) {
+  billItemsList.replaceChildren();
+
+  items.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "bill-item-row";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+    checkbox.setAttribute("aria-label", `Select item ${index + 1}`);
+
+    const fields = document.createElement("div");
+    fields.className = "bill-item-fields";
+
+    const nameLabel = document.createElement("label");
+    nameLabel.textContent = "Product name";
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.value = item.name;
+    nameInput.maxLength = 80;
+    nameInput.required = true;
+    nameInput.autocomplete = "off";
+    nameLabel.appendChild(nameInput);
+
+    const quantityLabel = document.createElement("label");
+    quantityLabel.textContent = "Quantity (please confirm)";
+
+    const quantityInput = document.createElement("input");
+    quantityInput.type = "text";
+    quantityInput.value = item.quantity;
+    quantityInput.maxLength = 40;
+    quantityInput.required = true;
+    quantityLabel.appendChild(quantityInput);
+
+    const categoryLabel = document.createElement("label");
+    categoryLabel.textContent = "Category";
+
+    const categorySelect = document.createElement("select");
+    categorySelect.innerHTML = `
+      <option value="Food">Food</option>
+      <option value="Medicine">Medicine</option>
+      <option value="Cosmetics">Cosmetics</option>
+      <option value="Household">Household</option>
+    `;
+    categoryLabel.appendChild(categorySelect);
+
+    const expiryLabel = document.createElement("label");
+    expiryLabel.textContent = "Expiry date (required)";
+
+    const expiryInput = document.createElement("input");
+    expiryInput.type = "date";
+    expiryInput.required = true;
+    expiryLabel.appendChild(expiryInput);
+
+    fields.append(
+      nameLabel,
+      quantityLabel,
+      categoryLabel,
+      expiryLabel
+    );
+
+    row.append(checkbox, fields);
+    billItemsList.appendChild(row);
+  });
+}
+
+// Validate date values without changing existing expiry calculations.
+function isValidReceiptExpiry(expiry) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(expiry)) return false;
+
+  const [year, month, day] = expiry.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day;
+}
+
+// Save selected products using the existing product structure and saveProducts().
+billContinueBtn.addEventListener("click", () => {
+  const rows = [...billItemsList.querySelectorAll(".bill-item-row")];
+
+  const selectedItems = rows
+    .filter(row => row.querySelector('input[type="checkbox"]').checked)
+    .map(row => {
+      const fields = row.querySelector(".bill-item-fields");
+
+      return {
+        name: fields.querySelector('input[type="text"]:first-of-type').value.trim(),
+        quantity: fields.querySelectorAll('input[type="text"]')[1].value.trim(),
+        category: fields.querySelector("select").value,
+        expiry: fields.querySelector('input[type="date"]').value
+      };
+    });
+
+  if (!selectedItems.length) {
+    billStatus.textContent = "Select at least one product to continue.";
+    return;
+  }
+
+  const invalidItem = selectedItems.find(item =>
+    !item.name ||
+    item.name.length > 80 ||
+    !item.quantity ||
+    item.quantity.length > 40 ||
+    !isValidReceiptExpiry(item.expiry)
+  );
+
+  if (invalidItem) {
+    billStatus.textContent =
+      "Complete each selected product's name, quantity, and valid expiry date before saving.";
+    return;
+  }
+
+  const previousProducts = [...products];
+
+  const newProducts = selectedItems.map(item => ({
+    id: crypto.randomUUID(),
+    name: item.name,
+    category: item.category,
+    quantity: item.quantity,
+    expiry: item.expiry
+  }));
+
+  products.push(...newProducts);
+
+  if (!saveProducts()) {
+    products = previousProducts;
+    billStatus.textContent =
+      "Products could not be saved. Your existing inventory has been restored.";
+    return;
+  }
+
+  renderProducts();
+  closeBillScanner();
+
+  alert(`${newProducts.length} product(s) added to your inventory.`);
+});

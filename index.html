@@ -10,25 +10,98 @@
   <title>Life Expiry — Waste Less, Live Better</title>
 
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="js/app.js" defer></script>
+
 </head>
 <body>
-  <header class="topbar">
-    <a href="#" class="brand">
-      <span class="brand-icon">✳</span>
-      Life Expiry
-    </a>
+  
+<header class="topbar">
+  <a href="#dashboard" class="brand">
+    <span class="brand-icon">✳</span>
+    <span>Life Expiry</span>
+  </a>
 
+  <button
+    class="mobile-menu-toggle"
+    id="mobile-menu-toggle"
+    type="button"
+    aria-label="Open navigation menu"
+    aria-expanded="false"
+    aria-controls="mobile-menu"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h16"/>
+      <path d="M4 12h16"/>
+      <path d="M4 17h16"/>
+    </svg>
+  </button>
+
+  <div class="navbar-content" id="mobile-menu">
     <nav class="navigation" aria-label="Main navigation">
       <a href="#dashboard" class="nav-link active">Dashboard</a>
       <a href="#inventory" class="nav-link">My Inventory</a>
       <a href="#recipes" class="nav-link">Recipe Ideas</a>
     </nav>
 
-    <button class="primary-button" id="add-product-btn">
-      + Add Product
-    </button>
-  </header>
+    <div class="nav-actions">
+      <button class="primary-button" id="add-product-btn" type="button">
+        + Add Product
+      </button>
+
+      <button
+        id="scan-items-btn"
+        class="scan-items-button"
+        type="button"
+      >
+        <svg
+          class="scan-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 7V5a1 1 0 0 1 1-1h2"/>
+          <path d="M17 4h2a1 1 0 0 1 1 1v2"/>
+          <path d="M20 17v2a1 1 0 0 1-1 1h-2"/>
+          <path d="M7 20H5a1 1 0 0 1-1-1v-2"/>
+          <path d="M4 12h16"/>
+          <path d="M7 9v6"/>
+          <path d="M10 9v6"/>
+          <path d="M14 9v6"/>
+          <path d="M17 9v6"/>
+        </svg>
+        <span>Scan Items</span>
+      </button>
+      <button
+       id="scan-bill-btn"
+       class="scan-items-button"
+       type="button"
+      >
+        <span aria-hidden="true">🧾</span>
+        <span>Scan Bill</span>
+      </button>
+    </div>
+  </div>
+</header>
+
 
   <main class="container" id="dashboard">
     <section class="welcome">
@@ -217,5 +290,84 @@
       <p>Made with care by LifeExpiry · A little less waste, every day.</p>
     </footer>
   </main>
+  
+<!-- Barcode scanner modal -->
+<div id="scanner-modal" class="scanner-modal" hidden>
+  <div class="scanner-content">
+    <button
+      type="button"
+      id="close-scanner-btn"
+      class="scanner-close"
+      aria-label="Close scanner"
+    >
+      ✕
+    </button>
+
+    <h2>Scan a Product</h2>
+    <p>Point your camera at the product barcode.</p>
+
+    <div id="barcode-reader"></div>
+
+    <p id="scanner-status" role="status">
+      Camera scanner is ready.
+    </p>
+
+    <button type="button" id="stop-scanner-btn">
+      Stop Camera
+    </button>
+  </div>
+</div>
+
+<!-- Receipt scanning modal -->
+<div id="bill-modal" class="scanner-modal" hidden>
+  <div class="scanner-content bill-content">
+    <button
+      type="button"
+      id="close-bill-btn"
+      class="scanner-close"
+      aria-label="Close receipt scanner"
+    >✕</button>
+
+    <h2>Scan a Grocery Bill</h2>
+    <p>Take a clear photo or upload a receipt image.</p>
+
+    <label for="bill-camera-input" class="bill-upload-label">
+      <span aria-hidden="true">📷</span>
+      Take a photo
+    </label>
+    <input
+      id="bill-camera-input"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      hidden
+    >
+
+    <label for="bill-file-input" class="bill-upload-label secondary">
+      <span aria-hidden="true">📁</span>
+      Upload an image
+    </label>
+    <input
+      id="bill-file-input"
+      type="file"
+      accept="image/*"
+      hidden
+    >
+
+    <p id="bill-status" role="status" aria-live="polite">
+      No receipt selected yet.
+    </p>
+
+    <section id="bill-review" hidden>
+      <h3>Review detected products</h3>
+      <p>Correct the names and quantities before continuing.</p>
+      <div id="bill-items-list"></div>
+      <button id="bill-continue-btn" class="primary-button" type="button">
+        Continue to expiry dates
+      </button>
+    </section>
+  </div>
+</div>
+
 </body>
 </html>
